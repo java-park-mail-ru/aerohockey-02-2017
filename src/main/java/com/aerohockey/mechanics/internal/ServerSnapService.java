@@ -9,6 +9,9 @@ import com.aerohockey.websocket.Message;
 import com.aerohockey.websocket.RemotePointService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
@@ -22,6 +25,8 @@ import java.util.stream.Collectors;
  */
 @Service
 public class ServerSnapService {
+    private static final @NotNull Logger LOGGER = LoggerFactory.getLogger(ServerSnapService.class);
+
     private final @NotNull RemotePointService remotePointService;
 
     private final @NotNull ObjectMapper objectMapper = new ObjectMapper();
@@ -30,7 +35,7 @@ public class ServerSnapService {
         this.remotePointService = remotePointService;
     }
 
-    public void sendSnapshotsFor(@NotNull GameSession gameSession, long frameTime) {
+    public @Nullable Long sendSnapshotsFor(@NotNull GameSession gameSession, long frameTime) {
         final Collection<GameUser> players = new ArrayList<>();
         players.add(gameSession.getTop());
         players.add(gameSession.getBottom());
@@ -38,9 +43,9 @@ public class ServerSnapService {
         final ServerSnap snap = new ServerSnap();
         snap.setServerFrameTime(frameTime);
 
-        //noinspection OverlyBroadCatchBlock
-        try {
-            for (GameUser player : players) {
+        for (GameUser player : players) {
+            //noinspection OverlyBroadCatchBlock
+            try {
                 snap.setBalls(gameSession.getBalls().stream().map(Ball::getCoords).collect(Collectors.toList()));
                 final List<ServerPlayerSnap> playersSnaps = new ArrayList<>();
                 for (GameUser p : players) {
@@ -49,9 +54,11 @@ public class ServerSnapService {
                 snap.setPlayers(playersSnaps);
                 final Message message = new Message(ServerSnap.class.getName(), objectMapper.writeValueAsString(snap));
                 remotePointService.sendMessageToUser(player.getId(), message);
+            } catch (IOException ex) {
+                LOGGER.error("Failed send snapshots - user with id = {} disconnected", player.getId());
+                return player.getId();
             }
-        } catch (IOException ex) {
-            throw new RuntimeException("Failed sending snapshot", ex);
         }
+        return null;
     }
 }

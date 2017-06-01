@@ -49,7 +49,7 @@ public class GameInitService {
             } catch (IOException e) {
                 players.forEach(playerToCutOff -> remotePointService.cutDownConnection(playerToCutOff.getId()
                 ));
-                LOGGER.error("Unnable to start a game", e);
+                LOGGER.error("Unable to start a game", e);
             }
         }
     }

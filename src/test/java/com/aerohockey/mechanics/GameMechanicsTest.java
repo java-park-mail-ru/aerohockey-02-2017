@@ -2,7 +2,6 @@ package com.aerohockey.mechanics;
 
 import com.aerohockey.mechanics.avatar.GameUser;
 import com.aerohockey.mechanics.base.ClientSnap;
-import com.aerohockey.mechanics.internal.GameSessionService;
 import com.aerohockey.model.UserProfile;
 import com.aerohockey.services.AccountService;
 import com.aerohockey.websocket.RemotePointService;
@@ -35,8 +34,7 @@ public class GameMechanicsTest {
     @Autowired
     private AccountService accountService;
     @Autowired
-    private GameSessionService gameSessionService;
-    @Autowired
+    private MechanicsExecutor mechanicsExecutor;
     private GameMechanics gameMechanics;
 
     private UserProfile user1;
@@ -51,12 +49,16 @@ public class GameMechanicsTest {
         user2 = accountService.addUser("user2", "user2@mail.ru", "123");
     }
 
-    private GameSession startGame(long player1, long player2) {
-        gameMechanics.addUser(player1);
-        gameMechanics.addUser(player2);
+    private GameSession startGame(long player1, long  player2) {
+        mechanicsExecutor.addUser(player1);
+        mechanicsExecutor.addUser(player2);
+        this.gameMechanics = mechanicsExecutor.getMechanicsForUser(player1);
+        assertNotNull(gameMechanics);
+        assertEquals("Users should be in the same mechanics", gameMechanics, mechanicsExecutor.getMechanicsForUser(player2));
         gameMechanics.gmStep(0);
-        final GameSession gameSession = gameSessionService.getSessionForUser(player1);
-        assertNotNull("Game session should be started on closest tick, but it didn't", gameSession);
+        final GameSession gameSession = gameMechanics.getSessionForUser(player1);
+        assertNotNull(gameSession);
+        assertEquals("Users should be in the same session", gameSession, gameMechanics.getSessionForUser(player2));
         return gameSession;
     }
 
@@ -73,11 +75,11 @@ public class GameMechanicsTest {
 
         gameMechanics.addClientSnapshot(firstPlayer.getId(), new ClientSnap("right", 1));
         gameMechanics.gmStep(0);
-        assertEquals(PLATFORM_SPEED, firstPlayer.getPlatform().getCoords().x, delta);
+        assertEquals(-PLATFORM_SPEED, firstPlayer.getPlatform().getCoords().x, delta);
 
         gameMechanics.addClientSnapshot(firstPlayer.getId(), new ClientSnap("left", 2));
         gameMechanics.gmStep(0);
-        assertEquals(-PLATFORM_SPEED, firstPlayer.getPlatform().getCoords().x, delta);
+        assertEquals(PLATFORM_SPEED, firstPlayer.getPlatform().getCoords().x, delta);
     }
 
     @Test

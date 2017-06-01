@@ -67,6 +67,7 @@ public class GameUser {
         result.setScore(score);
         result.setCoords(platformCoords);
         result.setWidth(platform.getWidth());
+        result.setShield(platform.isShield());
         return result;
     }
 

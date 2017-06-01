@@ -1,6 +1,6 @@
 package com.aerohockey.mechanics.handlers;
 
-import com.aerohockey.mechanics.GameMechanics;
+import com.aerohockey.mechanics.MechanicsExecutor;
 import com.aerohockey.mechanics.base.ClientSnap;
 import com.aerohockey.websocket.MessageHandler;
 import com.aerohockey.websocket.MessageHandlerContainer;
@@ -14,12 +14,12 @@ import javax.annotation.PostConstruct;
  */
 @Component
 public class ClientSnapHandler extends MessageHandler<ClientSnap> {
-    private final @NotNull GameMechanics gameMechanics;
+    private final @NotNull MechanicsExecutor mechanicsExecutor;
     private final @NotNull MessageHandlerContainer messageHandlerContainer;
 
-    public ClientSnapHandler(@NotNull GameMechanics gameMechanics, @NotNull MessageHandlerContainer messageHandlerContainer) {
+    public ClientSnapHandler(@NotNull MechanicsExecutor mechanicsExecutor, @NotNull MessageHandlerContainer messageHandlerContainer) {
         super(ClientSnap.class);
-        this.gameMechanics = gameMechanics;
+        this.mechanicsExecutor = mechanicsExecutor;
         this.messageHandlerContainer = messageHandlerContainer;
     }
 
@@ -30,6 +30,6 @@ public class ClientSnapHandler extends MessageHandler<ClientSnap> {
 
     @Override
     public void handle(@NotNull ClientSnap message, @NotNull Long forUser) {
-        gameMechanics.addClientSnapshot(forUser, message);
+        mechanicsExecutor.addClientSnapshot(forUser, message);
     }
 }

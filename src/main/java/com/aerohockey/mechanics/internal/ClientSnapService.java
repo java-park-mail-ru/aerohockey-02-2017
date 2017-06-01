@@ -33,7 +33,7 @@ public class ClientSnapService {
         return snaps.getOrDefault(user, Collections.emptyList());
     }
 
-    public void processSnapshotsFor(@NotNull GameSession gameSession) {
+    public synchronized void processSnapshotsFor(@NotNull GameSession gameSession) {
         final Collection<GameUser> players = new ArrayList<>();
         players.add(gameSession.getTop());
         players.add(gameSession.getBottom());

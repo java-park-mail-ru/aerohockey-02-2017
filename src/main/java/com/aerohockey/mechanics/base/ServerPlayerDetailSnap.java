@@ -7,6 +7,7 @@ package com.aerohockey.mechanics.base;
 public class ServerPlayerDetailSnap extends ServerPlayerSnap {
     private byte score;
     private double width;
+    private boolean shield;
 
     public byte getScore() {
         return score;
@@ -22,5 +23,13 @@ public class ServerPlayerDetailSnap extends ServerPlayerSnap {
 
     public void setWidth(double width) {
         this.width = width;
+    }
+
+    public boolean isShield() {
+        return shield;
+    }
+
+    public void setShield(boolean shield) {
+        this.shield = shield;
     }
 }

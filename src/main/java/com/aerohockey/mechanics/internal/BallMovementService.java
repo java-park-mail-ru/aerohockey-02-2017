@@ -5,16 +5,16 @@ import com.aerohockey.mechanics.avatar.Ball;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.stereotype.Service;
 
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Created by sergeybutorin on 27.04.17.
  */
 @Service
 public class BallMovementService {
-    private final Map<Ball, GameSession> ballsToMove = new HashMap<>();
+    private final Map<Ball, GameSession> ballsToMove = new ConcurrentHashMap<>();
 
     public void registerBallToMove(@NotNull List<Ball> balls, @NotNull GameSession gameSession) {
         for (Ball ball : balls) {
@@ -27,6 +27,9 @@ public class BallMovementService {
             final Ball ball = entry.getKey();
             final GameSession gameSession = entry.getValue();
             ball.move(gameSession, frameTime);
+            for (Ball secondBall : gameSession.getBalls()) {
+                ball.twoBallCollision(secondBall, frameTime);
+            }
         }
     }
 

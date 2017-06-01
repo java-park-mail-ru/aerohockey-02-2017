@@ -5,8 +5,12 @@ import com.aerohockey.mechanics.avatar.GameUser;
 import com.aerohockey.mechanics.base.GameOverSnap;
 import com.aerohockey.websocket.Message;
 import com.aerohockey.websocket.RemotePointService;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
@@ -20,6 +24,8 @@ import static com.aerohockey.mechanics.Config.MAX_SCORE;
  */
 @Service
 public class GameOverSnapService {
+    private static final @NotNull Logger LOGGER = LoggerFactory.getLogger(GameOverSnapService.class);
+
     private final @NotNull RemotePointService remotePointService;
 
     private final @NotNull ObjectMapper objectMapper = new ObjectMapper();
@@ -28,21 +34,21 @@ public class GameOverSnapService {
         this.remotePointService = remotePointService;
     }
 
-    public void sendSnapshotsFor(@NotNull GameSession gameSession) {
+    public void sendSnapshotsFor(@NotNull GameSession gameSession, @Nullable Long leftPlayerId) {
         final Collection<GameUser> players = new ArrayList<>();
         players.add(gameSession.getTop());
         players.add(gameSession.getBottom());
 
         final GameOverSnap snap = new GameOverSnap();
 
-        //noinspection OverlyBroadCatchBlock
         try {
             for (GameUser player : players) {
-                final int value;
-                if (player.getScore() == MAX_SCORE) { //winner
-                    value = 1 + Math.abs(gameSession.getOpponent(player).getRating()) / (gameSession.getOpponent(player).getScore() + 1);
+                final int opponentRating = gameSession.getOpponent(player).getRating();
+                int value = (opponentRating < 10) ? 1 : opponentRating/10;
+                if (player.getScore() >= MAX_SCORE || (leftPlayerId != null && leftPlayerId != player.getId())) { //winner
+                    value += 1;
                 } else { //loser
-                    value = -gameSession.getOpponent(player).getRating()/10;
+                    value *= -1;
                 }
                 player.changeRating(value);
 
@@ -50,10 +56,14 @@ public class GameOverSnapService {
                 snap.setChangeRating(value);
 
                 final Message message = new Message(GameOverSnap.class.getName(), objectMapper.writeValueAsString(snap));
-                remotePointService.sendMessageToUser(player.getId(), message);
+                try {
+                    remotePointService.sendMessageToUser(player.getId(), message);
+                } catch (IOException ex) {
+                    LOGGER.error("Failed send snapshots - user disconnected");
+                }
             }
-        } catch (IOException ex) {
-            throw new RuntimeException("Failed sending snapshot", ex);
+        } catch (JsonProcessingException ex) {
+            LOGGER.error("Failed send snapshots", ex);
         }
     }
 }
